@@ -56,7 +56,6 @@ from .block import (
     RepVGGDW,
     ResNetLayer,
     SCDown,
-    Mix,
     FCAAttention,
 )
 from .conv import (
@@ -158,6 +157,5 @@ __all__ = (
     "C2fCIB",
     "Attention",
     "PSA",
-    "Mix",
     "FCAAttention",
 )

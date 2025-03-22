@@ -50,7 +50,6 @@ __all__ = (
     "Attention",
     "PSA",
     "SCDown",
-    "Mix",
     "FCAAttention",
 )
 
@@ -1126,8 +1125,10 @@ class Mix(nn.Module):
         return out
 
 class FCAAttention(nn.Module):
-    def __init__(self, channel, b=1, gamma=2):
+    def __init__(self, channel):
         super(FCAAttention, self).__init__()
+        b = 1
+        gamma = 2
         self.avg_pool = nn.AdaptiveAvgPool2d(1)  # 全局平均池化
         # 一维卷积
         t = int(abs((math.log(channel, 2) + b) / gamma))

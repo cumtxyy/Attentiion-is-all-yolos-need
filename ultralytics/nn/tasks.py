@@ -62,7 +62,6 @@ from ultralytics.nn.modules import (
     WorldDetect,
     v10Detect,
     FCAAttention,
-    Mix,
 )
 from ultralytics.utils import DEFAULT_CFG_DICT, DEFAULT_CFG_KEYS, LOGGER, colorstr, emojis, yaml_load
 from ultralytics.utils.checks import check_requirements, check_suffix, check_yaml
@@ -1001,8 +1000,6 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             PSA,
             SCDown,
             C2fCIB,
-            Mix,
-            FCAAttention,
         }:
             c1, c2 = ch[f], args[0]
             if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
@@ -1064,7 +1061,12 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [c1, c2, *args[1:]]
         elif m is CBFuse:
             c2 = ch[f[-1]]
-        else:
+        elif m is FCAAttention:
+            #添加fca部分
+            c1 = ch[f]  # 输入通道数继承自前一层的输出
+            args = [c1] #调试了一天 就这条语句就行了 嗨
+            c2 = c1  # 保持输入输出一致
+        else :
             c2 = ch[f]
 
         m_ = nn.Sequential(*(m(*args) for _ in range(n))) if n > 1 else m(*args)  # module
