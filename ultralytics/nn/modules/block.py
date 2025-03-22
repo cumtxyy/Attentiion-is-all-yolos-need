@@ -4,6 +4,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math
 
 from ultralytics.utils.torch_utils import fuse_conv_and_bn
 
@@ -49,6 +50,8 @@ __all__ = (
     "Attention",
     "PSA",
     "SCDown",
+    "Mix",
+    "FCAAttention",
 )
 
 
@@ -1106,3 +1109,46 @@ class SCDown(nn.Module):
     def forward(self, x):
         """Applies convolution and downsampling to the input tensor in the SCDown module."""
         return self.cv2(self.cv1(x))
+
+
+class Mix(nn.Module):
+    def __init__(self, m=-0.80):
+        super(Mix, self).__init__()
+        w = torch.nn.Parameter(torch.FloatTensor([m]), requires_grad=True)
+        # w = torch.nn.Parameter(w, requires_grad=True) #冗余代码
+        self.w = w
+        self.mix_block = nn.Sigmoid()
+
+    def forward(self, fea1, fea2):
+        mix_factor = self.mix_block(self.w)
+        out = fea1 * mix_factor.expand_as(fea1) + fea2 * (
+                    1 - mix_factor.expand_as(fea2))  # 将标量 mix_factor 扩展为与 fea1 和 fea2 相同的形状，使其可以逐元素相乘。
+        return out
+
+class FCAAttention(nn.Module):
+    def __init__(self, channel, b=1, gamma=2):
+        super(FCAAttention, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)  # 全局平均池化
+        # 一维卷积
+        t = int(abs((math.log(channel, 2) + b) / gamma))
+        k = t if t % 2 else t + 1
+        self.conv1 = nn.Conv1d(1, 1, kernel_size=k, padding=int(k / 2), bias=False)  # 根据通道数自适应感受野大小
+        self.fc = nn.Conv2d(channel, channel, 1, padding=0, bias=True)
+        self.sigmoid = nn.Sigmoid()
+        self.mix = Mix()
+
+    def forward(self, input):
+        x = self.avg_pool(input)
+        x1 = self.conv1(x.squeeze(-1).transpose(-1, -2)).transpose(-1, -2)  # (1,64,1)
+        x2 = self.fc(x).squeeze(-1).transpose(-1, -2)  # (1,1,64)
+        out1 = torch.sum(torch.matmul(x1, x2), dim=1).unsqueeze(-1).unsqueeze(-1)  # (1,64,1,1) 局部融合sum后
+        # x1 = x1.transpose(-1, -2).unsqueeze(-1)
+        out1 = self.sigmoid(out1)
+        out2 = torch.sum(torch.matmul(x2.transpose(-1, -2), x1.transpose(-1, -2)), dim=1).unsqueeze(-1).unsqueeze(
+                -1)  # (1,64,1,1)全局融合sum后
+        # out2 = self.fc(x)
+        out2 = self.sigmoid(out2)
+        out = self.mix(out1, out2)
+        # out = self.conv1(out.squeeze(-1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(-1)#错误添加
+        out = self.sigmoid(out)
+        return input * out
