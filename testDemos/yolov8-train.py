@@ -75,4 +75,6 @@ model.train(
     name="train",     # 子目录名称
 )
 
+
+
 # model = YOLO('../ultralytics/cfg/models/v8/yolov8_4fca.yaml')
