@@ -22,24 +22,21 @@
 # )
 
 import torch
-import torch.nn as nn
 from ultralytics import YOLO
-from ultralytics.nn.modules import FCAAttention
 
 # --- 步骤1：定义层号映射 ---
 layer_mapping = {
-    11: 12,    # 示例：原第11层 -> 新第12层
-    12: 13,
-    13: 14,
-    14: 16,
-    15: 17,
-    16: 18,
-    17: 20,
-    18: 21,
-    19: 22,
-    20: 24,
-    21: 25,
-    22: 26,     #别忘了检测头的mapping
+    12 : 13,
+    13 : 14,
+    14 : 15,
+    15 : 17,
+    16 : 18,
+    17 : 19,
+    18 : 21,
+    19 : 22,
+    20 : 23,
+    21 : 25,
+    22 : 26
 }
 
 # --- 步骤2：重命名权重键 ---
@@ -56,24 +53,24 @@ for key, value in pretrained.items():
     new_state_dict[new_key] = value
 
 # --- 步骤3：加载并初始化 ---
-model = YOLO('../ultralytics/cfg/models/v8/yolov8_4fca.yaml')
+model = YOLO('../ultralytics/cfg/models/v8/yolov8_4fca_afterConcat.yaml')
 load_result = model.model.load_state_dict(new_state_dict, strict=False)
 
 
 
-#
-# #服务器 训练配置
-# # model.train(
-# #     data='../myBddDatasets.yaml',
-# #     epochs=150,           # 增大训练轮次（大数据集需要更充分训练）
-# #     batch=64,             # 根据自动检测结果调整
-# #     imgsz=640,
-# #     workers=8,            # 数据加载优化
-# #     optimizer='AdamW',     # 替代默认 SGD（对大数据集更友好）
-# #     lr0=1e-3,             # 初始学习率（配合 AdamW 使用）
-# #     lrf=0.01,            # 最终学习率 = lr0 * lrf
-# #     patience=20,         # 早停
-# #     device=1,            # 明确指定 GPU
-# # )
+
+#服务器 训练配置
+model.train(
+    data='../myBddDatasets.yaml',
+    epochs=150,           # 增大训练轮次（大数据集需要更充分训练）
+    batch=64,             # 根据自动检测结果调整
+    imgsz=640,
+    workers=8,            # 数据加载优化
+    optimizer='AdamW',     # 替代默认 SGD（对大数据集更友好）
+    lr0=1e-3,             # 初始学习率（配合 AdamW 使用）
+    lrf=0.01,            # 最终学习率 = lr0 * lrf
+    patience=20,         # 早停
+    device=3,            # 明确指定 GPU
+)
 
 # model = YOLO('../ultralytics/cfg/models/v8/yolov8_4fca.yaml')
