@@ -68,11 +68,14 @@ model.train(
     workers=8,            # 数据加载优化
     optimizer='AdamW',     # 替代默认 SGD（对大数据集更友好）
     lr0=1e-3,             # 初始学习率（配合 AdamW 使用）
-    lrf=0.01,            # 最终学习率 = lr0 * lrf
+    lrf=0.1,            # 最终学习率 = lr0 * lrf
+    cos_lr=True,
+    weight_decay=0.05,  # AdamW建议0.05（原SGD默认0.0005）[1](@ref)
+    warmup_epochs=3,    # 预热阶段避免初始学习率过高（可选）
     patience=20,         # 早停
     device=3,            # 明确指定 GPU
     project="../runs",  # 父目录路径
-    name="train",     # 子目录名称
+    name="train",       # 子目录名称
 )
 
 
