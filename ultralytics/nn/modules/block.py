@@ -1150,6 +1150,6 @@ class FCAAttention(nn.Module):
         # out2 = self.fc(x)
         out2 = self.sigmoid(out2)
         out = self.mix(out1, out2)
-        # out = self.conv1(out.squeeze(-1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(-1)#错误添加
+        out = self.conv1(out.squeeze(-1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(-1)#错误添加
         out = self.sigmoid(out)
         return input * out
